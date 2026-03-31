@@ -2,434 +2,778 @@
 <html lang="zh-CN">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0d0d0d">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>联系车主</title>
-  <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>停车二维码生成器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    :root {
-      --bg: #0d0d0d;
-      --surface: #161616;
-      --border: #2a2a2a;
-      --text: #f0ece4;
-      --dim: #666;
-      --accent: #f0a500;
-      --green: #22c55e;
-      --green-dim: rgba(34, 197, 94, 0.12);
-      --red: #ef4444;
-    }
+        :root {
+            --ink: #111;
+            --paper: #f5f0e8;
+            --accent: #e05c2a;
+            --accent2: #2a6ee0;
+            --rule: #ccc5b5;
+            --card: #fdfaf4;
+        }
 
-    html,
-    body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      overflow: hidden;
-    }
+        body {
+            background: var(--paper);
+            font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 48px 24px 80px;
+            position: relative;
+            overflow-x: hidden;
+        }
 
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 32px 24px;
-      position: relative;
-    }
+        /* Ruled paper texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: repeating-linear-gradient(transparent,
+                    transparent 27px,
+                    var(--rule) 27px,
+                    var(--rule) 28px);
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
 
-    /* Ambient glow */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -30%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(240, 165, 0, 0.07) 0%, transparent 60%);
-      pointer-events: none;
-    }
+        /* Red margin line */
+        body::after {
+            content: '';
+            position: fixed;
+            left: 72px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(224, 92, 42, 0.3);
+            pointer-events: none;
+            z-index: 0;
+        }
 
-    /* Grid pattern */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-    }
+        .page {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 560px;
+        }
 
-    .container {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 380px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-    }
+        header {
+            margin-bottom: 48px;
+            padding-left: 28px;
+            border-left: 6px solid var(--accent);
+        }
 
-    /* Status bar area */
-    .status-bar {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      margin-bottom: 32px;
-    }
+        .eyebrow {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      font-size: 11px;
-      color: var(--dim);
-      letter-spacing: 0.08em;
-    }
+        h1 {
+            font-size: clamp(28px, 6vw, 42px);
+            font-weight: 900;
+            color: var(--ink);
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+        }
 
-    .badge-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-      animation: blink 2.5s ease infinite;
-    }
+        h1 span {
+            color: var(--accent);
+        }
 
-    @keyframes blink {
+        .subtitle {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #777;
+            font-weight: 300;
+        }
 
-      0%,
-      80%,
-      100% {
-        opacity: 1;
-      }
+        .card {
+            background: var(--card);
+            border: 1.5px solid var(--rule);
+            border-radius: 4px;
+            padding: 32px;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.06);
+        }
 
-      40% {
-        opacity: 0.2;
-      }
-    }
+        .field-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 10px;
+            display: block;
+        }
 
-    /* Icon */
-    .icon-wrap {
-      position: relative;
-      margin-bottom: 28px;
-    }
+        .input-row {
+            display: flex;
+            gap: 0;
+            border: 2px solid var(--ink);
+            border-radius: 3px;
+            overflow: hidden;
+        }
 
-    .icon-ring {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      animation: ringPulse 3s ease infinite;
-    }
+        .input-prefix {
+            background: var(--ink);
+            color: #f5f0e8;
+            padding: 14px 16px;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            user-select: none;
+            letter-spacing: 0.05em;
+        }
 
-    @keyframes ringPulse {
+        input[type="tel"] {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 20px;
+            font-family: "SF Mono", "Courier New", monospace;
+            font-weight: 500;
+            color: var(--ink);
+            background: transparent;
+            padding: 14px 16px;
+            letter-spacing: 0.1em;
+        }
 
-      0%,
-      100% {
-        box-shadow: 0 0 0 0 rgba(240, 165, 0, 0);
-      }
+        input[type="tel"]::placeholder {
+            color: #ccc;
+            font-weight: 300;
+            letter-spacing: 0;
+        }
 
-      50% {
-        box-shadow: 0 0 0 16px rgba(240, 165, 0, 0.05);
-      }
-    }
+        .note-input {
+            margin-top: 20px;
+        }
 
-    .icon-ring::before {
-      content: '';
-      position: absolute;
-      inset: -12px;
-      border-radius: 50%;
-      border: 1px dashed rgba(240, 165, 0, 0.15);
-      animation: rotateSlow 20s linear infinite;
-    }
+        input[type="text"] {
+            width: 100%;
+            border: 2px solid var(--rule);
+            border-radius: 3px;
+            outline: none;
+            font-size: 15px;
+            font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            font-weight: 400;
+            color: var(--ink);
+            background: transparent;
+            padding: 12px 16px;
+            transition: border-color 0.2s;
+        }
 
-    @keyframes rotateSlow {
-      from {
-        transform: rotate(0deg);
-      }
+        input[type="url"] {
+            width: 100%;
+            border: 2px solid var(--ink);
+            border-radius: 3px;
+            outline: none;
+            font-size: 13px;
+            font-family: monospace;
+            color: var(--ink);
+            background: transparent;
+            padding: 12px 14px;
+            transition: border-color 0.2s;
+            letter-spacing: 0.01em;
+        }
 
-      to {
-        transform: rotate(360deg);
-      }
-    }
+        input[type="url"]:focus {
+            border-color: var(--accent);
+        }
 
-    .icon-inner {
-      width: 88px;
-      height: 88px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 38px;
-      position: relative;
-      z-index: 1;
-    }
+        input[type="url"]::placeholder {
+            color: #bbb;
+            font-family: monospace;
+        }
 
-    /* Text block */
-    .heading {
-      font-size: 13px;
-      font-weight: 400;
-      color: var(--dim);
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-      text-align: center;
-    }
+        .field-hint {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 6px;
+            font-weight: 300;
+            line-height: 1.5;
+        }
 
-    .phone-number {
-      font-size: clamp(36px, 10vw, 48px);
-      font-weight: 900;
-      color: var(--text);
-      letter-spacing: 0.08em;
-      text-align: center;
-      line-height: 1;
-      margin-bottom: 12px;
-      /* Subtle text shadow */
-      text-shadow: 0 0 40px rgba(240, 165, 0, 0.2);
-    }
+        input[type="text"]:focus {
+            border-color: var(--ink);
+        }
 
-    .vehicle-note {
-      font-size: 28px;
-      color: var(--dim);
-      font-weight: 300;
-      text-align: center;
-      margin-bottom: 48px;
-      padding: 8px 20px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      max-width: 280px;
-    }
+        .btn {
+            display: block;
+            width: 100%;
+            margin-top: 28px;
+            padding: 16px;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
 
-    /* Call button */
-    .call-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      width: 100%;
-      padding: 20px 32px;
-      background: var(--green);
-      color: #fff;
-      text-decoration: none;
-      border-radius: 16px;
-      font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 8px 32px rgba(34, 197, 94, 0.25), 0 0 0 1px rgba(34, 197, 94, 0.3);
-      cursor: pointer;
-      border: none;
-      -webkit-tap-highlight-color: transparent;
-    }
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--accent);
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+        }
 
-    .call-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 100%);
-    }
+        .btn:hover::after {
+            transform: translateX(0);
+        }
 
-    .call-btn:active {
-      transform: scale(0.97);
-      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
-    }
+        .btn:active {
+            transform: scale(0.99);
+        }
 
-    .call-icon {
-      font-size: 22px;
-      animation: ringPhone 2s ease 1s infinite;
-    }
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
 
-    @keyframes ringPhone {
+        /* Result */
+        .result {
+            margin-top: 32px;
+            display: none;
+            animation: fadeUp 0.4s ease both;
+        }
 
-      0%,
-      85%,
-      100% {
-        transform: rotate(0deg);
-      }
+        .result.visible {
+            display: block;
+        }
 
-      88% {
-        transform: rotate(-15deg);
-      }
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
 
-      92% {
-        transform: rotate(15deg);
-      }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-      96% {
-        transform: rotate(-8deg);
-      }
-    }
+        .result-inner {
+            background: var(--card);
+            border: 1.5px solid var(--rule);
+            border-radius: 4px;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
 
-    .call-btn-text {
-      position: relative;
-      z-index: 1;
-    }
+        .result-header {
+            background: var(--ink);
+            color: var(--paper);
+            padding: 14px 24px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    /* Error state */
-    .error-card {
-      display: none;
-      text-align: center;
-      padding: 32px 24px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-    }
+        .result-header::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+            animation: pulse 2s infinite;
+        }
 
-    .error-card.visible {
-      display: block;
-    }
+        @keyframes pulse {
 
-    .error-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
+            0%,
+            100% {
+                box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+            }
 
-    .error-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--red);
-      margin-bottom: 8px;
-    }
+            50% {
+                box-shadow: 0 0 0 6px rgba(76, 175, 80, 0.1);
+            }
+        }
 
-    .error-desc {
-      font-size: 13px;
-      color: var(--dim);
-      line-height: 1.6;
-    }
+        .result-body {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
 
-    /* Footer hint */
-    .hint {
-      margin-top: 20px;
-      font-size: 11px;
-      color: #444;
-      text-align: center;
-      letter-spacing: 0.05em;
-      line-height: 1.6;
-    }
+        .qr-frame {
+            position: relative;
+            padding: 16px;
+            background: #fff;
+            border: 2px solid var(--ink);
+            border-radius: 4px;
+        }
 
-    /* Loading state */
-    .content {
-      display: none;
-    }
+        /* Corner brackets */
+        .qr-frame::before,
+        .qr-frame::after,
+        .qr-frame .corner-br,
+        .qr-frame .corner-bl {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--accent);
+            border-style: solid;
+        }
 
-    .content.visible {
-      display: contents;
-    }
-  </style>
+        .qr-frame::before {
+            top: -4px;
+            left: -4px;
+            border-width: 3px 0 0 3px;
+        }
+
+        .qr-frame::after {
+            top: -4px;
+            right: -4px;
+            border-width: 3px 3px 0 0;
+        }
+
+        .qr-frame .corner-br {
+            bottom: -4px;
+            right: -4px;
+            border-width: 0 3px 3px 0;
+        }
+
+        .qr-frame .corner-bl {
+            bottom: -4px;
+            left: -4px;
+            border-width: 0 0 3px 3px;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+        }
+
+        #qrcode canvas,
+        #qrcode img {
+            display: block;
+        }
+
+        /* ── Sticker preview ── */
+        .sticker-preview {
+            width: 100%;
+            background: #fff;
+            border: 2px solid var(--ink);
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.08);
+        }
+
+        .sticker-top {
+            background: var(--ink);
+            color: var(--paper);
+            text-align: center;
+            padding: 10px 16px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .sticker-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 24px 16px;
+            gap: 14px;
+        }
+
+        .sticker-headline {
+            font-size: clamp(22px, 6vw, 30px);
+            font-weight: 900;
+            color: var(--ink);
+            letter-spacing: 0.06em;
+            text-align: center;
+            line-height: 1.15;
+        }
+
+        .sticker-headline em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        .sticker-qr-wrap {
+            padding: 10px;
+            background: #fff;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .sticker-note {
+            font-size: 13px;
+            color: #888;
+            text-align: center;
+            font-weight: 400;
+            padding: 6px 12px;
+            border-top: 1px dashed #ddd;
+            width: 100%;
+        }
+
+        .qr-url {
+            font-size: 11px;
+            color: #bbb;
+            margin-top: 4px;
+            word-break: break-all;
+            font-family: monospace;
+            text-align: center;
+            padding: 0 8px;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 24px;
+            background: transparent;
+            border: 2px solid var(--ink);
+            border-radius: 3px;
+            font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+            cursor: pointer;
+            letter-spacing: 0.08em;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+
+        .btn-download:hover {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        .divider {
+            width: 100%;
+            border: none;
+            border-top: 1px solid var(--rule);
+            margin: 8px 0;
+        }
+
+        .how-to {
+            margin-top: 40px;
+        }
+
+        .how-to-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 16px;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            font-size: 13px;
+            color: #666;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        .step-num {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            background: var(--ink);
+            color: var(--paper);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container">
+    <div class="page">
+        <header>
+            <p class="eyebrow">Parking QR System</p>
+            <h1>停车<span>二维码</span><br>生成器</h1>
+            <p class="subtitle">生成专属车牌二维码，他人扫码即可联系您</p>
+        </header>
 
-    <!-- Error state -->
-    <div class="error-card" id="errorCard">
-      <div class="error-icon">⚠️</div>
-      <div class="error-title">链接无效</div>
-      <div class="error-desc">此二维码未包含有效的联系方式，<br>请重新生成二维码。</div>
-    </div>
+        <div class="card">
+            <label class="field-label">落地页 URL</label>
+            <input type="url" id="baseUrlInput" autocomplete="off" spellcheck="false">
+            <p class="field-hint">扫码后跳转的页面地址，默认使用当前目录下的 call.html</p>
 
-    <!-- Valid state -->
-    <div class="content" id="mainContent">
+            <div style="margin-top:20px">
+                <label class="field-label">车主联系电话</label>
+                <div class="input-row">
+                    <span class="input-prefix">📱 +86</span>
+                    <input type="tel" id="phoneInput" maxlength="11" inputmode="numeric">
+                </div>
+            </div>
 
-      <div class="icon-wrap">
-        <div class="icon-ring">
-          <div class="icon-inner">🚗</div>
+            <button class="btn" onclick="generate()">
+                <span>生成二维码 →</span>
+            </button>
         </div>
-      </div>
 
-      <p class="vehicle-note" id="noteDisplay">正在加载车辆信息…</p>
+        <div class="result" id="result">
+            <div class="result-inner">
+                <div class="result-header">贴纸预览 · 可打印张贴于车内</div>
+                <div class="result-body">
 
-      <a class="call-btn" id="callBtn" href="#">
-        <span class="call-icon">📞</span>
-        <span class="call-btn-text">点击拨打车主电话</span>
-      </a>
+                    <!-- Sticker preview -->
+                    <div class="sticker-preview">
+                        <div class="sticker-top">🚗 临时停车</div>
+                        <div class="sticker-body">
+                            <div class="sticker-headline">扫码<em>联系</em>车主</div>
+                            <div class="sticker-qr-wrap">
+                                <div id="qrcode"></div>
+                            </div>
+                            <div class="sticker-note" id="displayNote">—</div>
+                        </div>
+                    </div>
 
+                    <div class="qr-url" id="displayUrl"></div>
+
+                    <hr class="divider">
+                    <button class="btn-download" id="downloadBtn">
+                        ⬇ 下载贴纸图片
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="how-to">
+            <p class="how-to-title">使用说明</p>
+            <div class="steps">
+                <div class="step"><span class="step-num">1</span><span>填写您的手机号，点击生成二维码</span></div>
+                <div class="step"><span class="step-num">2</span><span>下载二维码图片，打印并张贴在车内仪表盘</span></div>
+                <div class="step"><span class="step-num">3</span><span>他人扫码后，页面显示"拨打车主电话"按钮，一键联系您</span></div>
+                <div class="step"><span class="step-num">4</span><span>部署到 GitHub Pages 后替换下方链接中的域名即可</span></div>
+            </div>
+        </div>
     </div>
 
-  </div>
+    <script>
+        // ── XOR + base62 (compact, URL-safe, ~15 chars for 11-digit phone) ──────
+        // KEY must match call.html. Each byte XORs with the corresponding key byte.
+        const KEY = [0x4f, 0xa1, 0x3c, 0x78, 0xd2, 0x05, 0xb9, 0x6e, 0x31, 0xac, 0x57];
+        const B62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-  <script>
-    // ── AES-GCM decryption (must match KEY_HEX in index.html) ──────────────
-    const KEY_HEX = 'a3f8c2d1e4b57690123456789abcdef0a3f8c2d1e4b57690123456789abcdef0';
+        function encodeB62(bytes) {
+            // Treat bytes as big-endian integer, convert to base62
+            let n = BigInt('0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(''));
+            let s = '';
+            const base = 62n;
+            while (n > 0n) { s = B62[Number(n % base)] + s; n /= base; }
+            return s || '0';
+        }
 
-    async function getKey() {
-      const raw = KEY_HEX.match(/.{2}/g).map(b => parseInt(b, 16));
-      return crypto.subtle.importKey(
-        'raw', new Uint8Array(raw), { name: 'AES-GCM' }, false, ['decrypt']
-      );
-    }
+        function encryptPhone(phone) {
+            const digits = phone.replace(/\D/g, '');
+            const bytes = digits.split('').map((c, i) => c.charCodeAt(0) ^ KEY[i % KEY.length]);
+            return encodeB62(bytes);
+        }
+        // ─────────────────────────────────────────────────────────────────────────
 
-    async function decryptPhone(b64url) {
-      // Restore base64url → base64 → bytes
-      const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      const iv = bytes.slice(0, 12);
-      const ciphertext = bytes.slice(12);
-      const key = await getKey();
-      const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
-      return new TextDecoder().decode(plainBuf);
-    }
-    // ───────────────────────────────────────────────────────────────────────
+        // Auto-fill call.html URL based on current page location
+        const DEFAULT_URL = (() => {
+            const { origin, pathname } = location;
+            const base = pathname.replace(/\/[^/]*$/, '/');
+            return `${origin}${base}call.html`;
+        })();
 
-    function showError() {
-      document.getElementById('errorCard').classList.add('visible');
-    }
+        document.getElementById('baseUrlInput').placeholder = DEFAULT_URL;
 
-    async function init() {
-      const params = new URLSearchParams(location.search);
-      const p = params.get('p');
-      const note = params.get('note');
+        async function generate() {
+            const inputVal = document.getElementById('baseUrlInput').value.trim().replace(/[?&].*$/, '');
+            const baseUrl = inputVal || DEFAULT_URL;
+            const raw = document.getElementById('phoneInput').value.trim().replace(/\D/g, '');
 
-      if (!p) { showError(); return; }
+            if (inputVal && !/^https?:\/\/.+/.test(inputVal)) {
+                document.getElementById('baseUrlInput').focus();
+                shake(document.getElementById('baseUrlInput'));
+                return;
+            }
+            if (!raw || raw.length < 7) {
+                document.getElementById('phoneInput').focus();
+                shake(document.querySelector('.input-row'));
+                return;
+            }
 
-      let phone;
-      try {
-        phone = await decryptPhone(p);
-      } catch (e) {
-        showError(); return;
-      }
+            const encrypted = encryptPhone(raw);
+            const url = `${baseUrl}?p=${encrypted}`;
 
-      const clean = phone.replace(/\D/g, '');
-      if (clean.length < 7) { showError(); return; }
+            // Update sticker preview
+            document.getElementById('displayNote').textContent = '请尽快移车，谢谢配合 🙏';
+            document.getElementById('displayUrl').textContent = url;
 
-      document.getElementById('noteDisplay').textContent = note || '尽快移车，谢谢支持 🙏';
-      document.getElementById('callBtn').href = `tel:${clean}`;
-      document.getElementById('mainContent').classList.add('visible');
+            // Generate QR into preview
+            const container = document.getElementById('qrcode');
+            container.innerHTML = '';
+            new QRCode(container, {
+                text: url,
+                width: 180,
+                height: 180,
+                colorDark: '#111111',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
 
-      document.getElementById('callBtn').addEventListener('click', () => {
-        if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-      });
-    }
+            // Download: draw full sticker on an offscreen Canvas
+            document.getElementById('downloadBtn').onclick = () => {
+                setTimeout(() => {
+                    const qrCanvas = container.querySelector('canvas');
+                    if (!qrCanvas) return;
+                    drawStickerAndDownload(qrCanvas, raw);
+                }, 150);
+            };
 
-    init();
-  </script>
+            const result = document.getElementById('result');
+            result.classList.remove('visible');
+            requestAnimationFrame(() => result.classList.add('visible'));
+            result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function drawStickerAndDownload(qrCanvas, rawPhone) {
+            const W = 480, pad = 32;
+            const headerH = 56;
+            const titleH = 80;
+            const qrSize = 220;
+            const noteH = 52;
+            const H = headerH + titleH + qrSize + noteH + pad * 2 + 24;
+
+            const c = document.createElement('canvas');
+            c.width = W;
+            c.height = H;
+            const ctx = c.getContext('2d');
+
+            const ink = '#111111';
+            const paper = '#ffffff';
+            const accent = '#e05c2a';
+
+            // Background
+            ctx.fillStyle = paper;
+            ctx.fillRect(0, 0, W, H);
+
+            // Border
+            ctx.strokeStyle = ink;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(2, 2, W - 4, H - 4);
+
+            // Header bar
+            ctx.fillStyle = ink;
+            ctx.fillRect(0, 0, W, headerH);
+            ctx.fillStyle = paper;
+            ctx.font = `bold ${16}px -apple-system, "PingFang SC", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🚗  临时停车  TEMP PARKING', W / 2, headerH / 2);
+
+            // Headline "扫码联系车主" — "联系" in accent, rest in ink
+            const titleY = headerH + 18;
+            ctx.font = `900 42px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            const part1 = '扫码', mid = '联系', part2 = '车主';
+            const p1w = ctx.measureText(part1).width;
+            const midw = ctx.measureText(mid).width;
+            const p2w = ctx.measureText(part2).width;
+            const rowW = p1w + midw + p2w;
+            let cx = (W - rowW) / 2;
+
+            ctx.fillStyle = ink; ctx.fillText(part1, cx, titleY); cx += p1w;
+            ctx.fillStyle = accent; ctx.fillText(mid, cx, titleY); cx += midw;
+            ctx.fillStyle = ink; ctx.fillText(part2, cx, titleY);
+
+            // QR code (centered)
+            const qrX = (W - qrSize) / 2;
+            const qrY = headerH + titleH + 8;
+            // White bg + subtle border
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+            ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+
+            // Divider
+            const divY = qrY + qrSize + 16;
+            ctx.strokeStyle = '#dddddd';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath(); ctx.moveTo(pad, divY); ctx.lineTo(W - pad, divY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Note (no phone number)
+            ctx.fillStyle = '#888888';
+            ctx.font = `400 ${15}px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('请尽快移车，谢谢配合 🙏', W / 2, divY + noteH / 2);
+
+            // Download
+            const a = document.createElement('a');
+            a.download = `parking-sticker.png`;
+            a.href = c.toDataURL('image/png');
+            a.click();
+        }
+
+        function formatPhone(n) {
+            if (n.length === 11) return `${n.slice(0, 3)} ${n.slice(3, 7)} ${n.slice(7)}`;
+            return n;
+        }
+
+        function shake(el) {
+            const orig = el.style.borderColor;
+            el.style.borderColor = '#e05c2a';
+            setTimeout(() => el.style.borderColor = orig, 800);
+        }
+
+        document.getElementById('phoneInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') generate();
+        });
+    </script>
 </body>
 
 </html>
