@@ -212,7 +212,7 @@
     }
 
     .vehicle-note {
-      font-size: 14px;
+      font-size: 28px;
       color: var(--dim);
       font-weight: 300;
       text-align: center;
@@ -419,7 +419,7 @@
       const clean = phone.replace(/\D/g, '');
       if (clean.length < 7) { showError(); return; }
 
-      document.getElementById('noteDisplay').textContent = note || '尽快移车，谢谢配合 🙏';
+      document.getElementById('noteDisplay').textContent = note || '尽快移车，谢谢支持 🙏';
       document.getElementById('callBtn').href = `tel:${clean}`;
       document.getElementById('mainContent').classList.add('visible');
 
