@@ -1,391 +1,435 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0d0d0d">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>联系车主</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0d0d0d;
-    --surface: #161616;
-    --border: #2a2a2a;
-    --text: #f0ece4;
-    --dim: #666;
-    --accent: #f0a500;
-    --green: #22c55e;
-    --green-dim: rgba(34,197,94,0.12);
-    --red: #ef4444;
-  }
-
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    overflow: hidden;
-  }
-
-  body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 24px;
-    position: relative;
-  }
-
-  /* Ambient glow */
-  body::before {
-    content: '';
-    position: fixed;
-    top: -30%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(240,165,0,0.07) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  /* Grid pattern */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-  }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    max-width: 380px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-  }
-
-  /* Status bar area */
-  .status-bar {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 32px;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    font-size: 11px;
-    color: var(--dim);
-    letter-spacing: 0.08em;
-  }
-
-  .badge-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: blink 2.5s ease infinite;
-  }
-
-  @keyframes blink {
-    0%, 80%, 100% { opacity: 1; }
-    40% { opacity: 0.2; }
-  }
-
-  /* Icon */
-  .icon-wrap {
-    position: relative;
-    margin-bottom: 28px;
-  }
-
-  .icon-ring {
-    width: 120px; height: 120px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    position: relative;
-    animation: ringPulse 3s ease infinite;
-  }
-
-  @keyframes ringPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(240,165,0,0); }
-    50% { box-shadow: 0 0 0 16px rgba(240,165,0,0.05); }
-  }
-
-  .icon-ring::before {
-    content: '';
-    position: absolute;
-    inset: -12px;
-    border-radius: 50%;
-    border: 1px dashed rgba(240,165,0,0.15);
-    animation: rotateSlow 20s linear infinite;
-  }
-
-  @keyframes rotateSlow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  .icon-inner {
-    width: 88px; height: 88px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 38px;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Text block */
-  .heading {
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--dim);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    text-align: center;
-  }
-
-  .phone-number {
-    font-size: clamp(36px, 10vw, 48px);
-    font-weight: 900;
-    color: var(--text);
-    letter-spacing: 0.08em;
-    text-align: center;
-    line-height: 1;
-    margin-bottom: 12px;
-    /* Subtle text shadow */
-    text-shadow: 0 0 40px rgba(240,165,0,0.2);
-  }
-
-  .vehicle-note {
-    font-size: 14px;
-    color: var(--dim);
-    font-weight: 300;
-    text-align: center;
-    margin-bottom: 48px;
-    padding: 8px 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    max-width: 280px;
-  }
-
-  /* Call button */
-  .call-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    width: 100%;
-    padding: 20px 32px;
-    background: var(--green);
-    color: #fff;
-    text-decoration: none;
-    border-radius: 16px;
-    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 8px 32px rgba(34,197,94,0.25), 0 0 0 1px rgba(34,197,94,0.3);
-    cursor: pointer;
-    border: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .call-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%);
-  }
-
-  .call-btn:active {
-    transform: scale(0.97);
-    box-shadow: 0 4px 16px rgba(34,197,94,0.2);
-  }
-
-  .call-icon {
-    font-size: 22px;
-    animation: ringPhone 2s ease 1s infinite;
-  }
-
-  @keyframes ringPhone {
-    0%, 85%, 100% { transform: rotate(0deg); }
-    88% { transform: rotate(-15deg); }
-    92% { transform: rotate(15deg); }
-    96% { transform: rotate(-8deg); }
-  }
-
-  .call-btn-text { position: relative; z-index: 1; }
-
-  /* Error state */
-  .error-card {
-    display: none;
-    text-align: center;
-    padding: 32px 24px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-  }
-
-  .error-card.visible { display: block; }
-
-  .error-icon { font-size: 48px; margin-bottom: 16px; }
-
-  .error-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--red);
-    margin-bottom: 8px;
-  }
-
-  .error-desc {
-    font-size: 13px;
-    color: var(--dim);
-    line-height: 1.6;
-  }
-
-  /* Footer hint */
-  .hint {
-    margin-top: 20px;
-    font-size: 11px;
-    color: #444;
-    text-align: center;
-    letter-spacing: 0.05em;
-    line-height: 1.6;
-  }
-
-  /* Loading state */
-  .content { display: none; }
-  .content.visible { display: contents; }
-</style>
-</head>
-<body>
-<div class="container">
-
-  <!-- Error state -->
-  <div class="error-card" id="errorCard">
-    <div class="error-icon">⚠️</div>
-    <div class="error-title">链接无效</div>
-    <div class="error-desc">此二维码未包含有效的联系方式，<br>请重新生成二维码。</div>
-  </div>
-
-  <!-- Valid state -->
-  <div class="content" id="mainContent">
-
-    <div class="status-bar">
-      <div class="badge">
-        <span class="badge-dot"></span>
-        <span>停车联系</span>
-      </div>
-    </div>
-
-    <div class="icon-wrap">
-      <div class="icon-ring">
-        <div class="icon-inner">🚗</div>
-      </div>
-    </div>
-
-    <p class="heading">车主联系电话</p>
-    <p class="phone-number" id="phoneDisplay">—</p>
-    <p class="vehicle-note" id="noteDisplay">正在加载车辆信息…</p>
-
-    <a class="call-btn" id="callBtn" href="#">
-      <span class="call-icon">📞</span>
-      <span class="call-btn-text">拨打车主电话</span>
-    </a>
-
-    <p class="hint">
-      点击上方按钮将直接拨打车主电话<br>
-      通话结束后请关闭此页面
-    </p>
-  </div>
-
-</div>
-
-<script>
-  // ── AES-GCM decryption (must match KEY_HEX in index.html) ──────────────
-  const KEY_HEX = 'a3f8c2d1e4b57690123456789abcdef0a3f8c2d1e4b57690123456789abcdef0';
-
-  async function getKey() {
-    const raw = KEY_HEX.match(/.{2}/g).map(b => parseInt(b, 16));
-    return crypto.subtle.importKey(
-      'raw', new Uint8Array(raw), { name: 'AES-GCM' }, false, ['decrypt']
-    );
-  }
-
-  async function decryptPhone(b64url) {
-    // Restore base64url → base64 → bytes
-    const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const iv         = bytes.slice(0, 12);
-    const ciphertext = bytes.slice(12);
-    const key = await getKey();
-    const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
-    return new TextDecoder().decode(plainBuf);
-  }
-  // ───────────────────────────────────────────────────────────────────────
-
-  function formatPhone(n) {
-    n = String(n).replace(/\D/g, '');
-    if (n.length === 11) return `${n.slice(0,3)} ${n.slice(3,7)} ${n.slice(7)}`;
-    return n;
-  }
-
-  function showError() {
-    document.getElementById('errorCard').classList.add('visible');
-  }
-
-  async function init() {
-    const params = new URLSearchParams(location.search);
-    const p    = params.get('p');
-    const note = params.get('note');
-
-    if (!p) { showError(); return; }
-
-    let phone;
-    try {
-      phone = await decryptPhone(p);
-    } catch (e) {
-      showError(); return;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d0d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>联系车主</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    const clean = phone.replace(/\D/g, '');
-    if (clean.length < 7) { showError(); return; }
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --text: #f0ece4;
+      --dim: #666;
+      --accent: #f0a500;
+      --green: #22c55e;
+      --green-dim: rgba(34, 197, 94, 0.12);
+      --red: #ef4444;
+    }
 
-    document.getElementById('phoneDisplay').textContent = formatPhone(clean);
-    document.getElementById('noteDisplay').textContent  = note || '请尽快移车，谢谢配合 🙏';
-    document.getElementById('callBtn').href = `tel:${clean}`;
-    document.getElementById('mainContent').classList.add('visible');
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      overflow: hidden;
+    }
 
-    document.getElementById('callBtn').addEventListener('click', () => {
-      if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-    });
-  }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      position: relative;
+    }
 
-  init();
-</script>
+    /* Ambient glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(240, 165, 0, 0.07) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Grid pattern */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* Status bar area */
+    .status-bar {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: blink 2.5s ease infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      80%,
+      100% {
+        opacity: 1;
+      }
+
+      40% {
+        opacity: 0.2;
+      }
+    }
+
+    /* Icon */
+    .icon-wrap {
+      position: relative;
+      margin-bottom: 28px;
+    }
+
+    .icon-ring {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      animation: ringPulse 3s ease infinite;
+    }
+
+    @keyframes ringPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(240, 165, 0, 0);
+      }
+
+      50% {
+        box-shadow: 0 0 0 16px rgba(240, 165, 0, 0.05);
+      }
+    }
+
+    .icon-ring::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 1px dashed rgba(240, 165, 0, 0.15);
+      animation: rotateSlow 20s linear infinite;
+    }
+
+    @keyframes rotateSlow {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .icon-inner {
+      width: 88px;
+      height: 88px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Text block */
+    .heading {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .phone-number {
+      font-size: clamp(36px, 10vw, 48px);
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: 0.08em;
+      text-align: center;
+      line-height: 1;
+      margin-bottom: 12px;
+      /* Subtle text shadow */
+      text-shadow: 0 0 40px rgba(240, 165, 0, 0.2);
+    }
+
+    .vehicle-note {
+      font-size: 14px;
+      color: var(--dim);
+      font-weight: 300;
+      text-align: center;
+      margin-bottom: 48px;
+      padding: 8px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      max-width: 280px;
+    }
+
+    /* Call button */
+    .call-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 20px 32px;
+      background: var(--green);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 16px;
+      font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 8px 32px rgba(34, 197, 94, 0.25), 0 0 0 1px rgba(34, 197, 94, 0.3);
+      cursor: pointer;
+      border: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .call-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 100%);
+    }
+
+    .call-btn:active {
+      transform: scale(0.97);
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
+    }
+
+    .call-icon {
+      font-size: 22px;
+      animation: ringPhone 2s ease 1s infinite;
+    }
+
+    @keyframes ringPhone {
+
+      0%,
+      85%,
+      100% {
+        transform: rotate(0deg);
+      }
+
+      88% {
+        transform: rotate(-15deg);
+      }
+
+      92% {
+        transform: rotate(15deg);
+      }
+
+      96% {
+        transform: rotate(-8deg);
+      }
+    }
+
+    .call-btn-text {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Error state */
+    .error-card {
+      display: none;
+      text-align: center;
+      padding: 32px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .error-card.visible {
+      display: block;
+    }
+
+    .error-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .error-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--red);
+      margin-bottom: 8px;
+    }
+
+    .error-desc {
+      font-size: 13px;
+      color: var(--dim);
+      line-height: 1.6;
+    }
+
+    /* Footer hint */
+    .hint {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #444;
+      text-align: center;
+      letter-spacing: 0.05em;
+      line-height: 1.6;
+    }
+
+    /* Loading state */
+    .content {
+      display: none;
+    }
+
+    .content.visible {
+      display: contents;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- Error state -->
+    <div class="error-card" id="errorCard">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title">链接无效</div>
+      <div class="error-desc">此二维码未包含有效的联系方式，<br>请重新生成二维码。</div>
+    </div>
+
+    <!-- Valid state -->
+    <div class="content" id="mainContent">
+
+      <div class="icon-wrap">
+        <div class="icon-ring">
+          <div class="icon-inner">🚗</div>
+        </div>
+      </div>
+
+      <p class="vehicle-note" id="noteDisplay">正在加载车辆信息…</p>
+
+      <a class="call-btn" id="callBtn" href="#">
+        <span class="call-icon">📞</span>
+        <span class="call-btn-text">如需挪车，请点击按钮拨打车主电话</span>
+      </a>
+
+    </div>
+
+  </div>
+
+  <script>
+    // ── AES-GCM decryption (must match KEY_HEX in index.html) ──────────────
+    const KEY_HEX = 'a3f8c2d1e4b57690123456789abcdef0a3f8c2d1e4b57690123456789abcdef0';
+
+    async function getKey() {
+      const raw = KEY_HEX.match(/.{2}/g).map(b => parseInt(b, 16));
+      return crypto.subtle.importKey(
+        'raw', new Uint8Array(raw), { name: 'AES-GCM' }, false, ['decrypt']
+      );
+    }
+
+    async function decryptPhone(b64url) {
+      // Restore base64url → base64 → bytes
+      const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const iv = bytes.slice(0, 12);
+      const ciphertext = bytes.slice(12);
+      const key = await getKey();
+      const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+      return new TextDecoder().decode(plainBuf);
+    }
+    // ───────────────────────────────────────────────────────────────────────
+
+    function showError() {
+      document.getElementById('errorCard').classList.add('visible');
+    }
+
+    async function init() {
+      const params = new URLSearchParams(location.search);
+      const p = params.get('p');
+      const note = params.get('note');
+
+      if (!p) { showError(); return; }
+
+      let phone;
+      try {
+        phone = await decryptPhone(p);
+      } catch (e) {
+        showError(); return;
+      }
+
+      const clean = phone.replace(/\D/g, '');
+      if (clean.length < 7) { showError(); return; }
+
+      document.getElementById('noteDisplay').textContent = note || '尽快移车，谢谢配合 🙏';
+      document.getElementById('callBtn').href = `tel:${clean}`;
+      document.getElementById('mainContent').classList.add('visible');
+
+      document.getElementById('callBtn').addEventListener('click', () => {
+        if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+      });
+    }
+
+    init();
+  </script>
 </body>
+
 </html>
