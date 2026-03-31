@@ -368,7 +368,7 @@
 
             <a class="call-btn" id="callBtn" href="#">
                 <span class="call-icon">📞</span>
-                <span class="call-btn-text">挪车请拨打车主电话</span>
+                <span class="call-btn-text">拨打车主电话</span>
             </a>
 
         </div>
@@ -416,7 +416,7 @@
             const clean = phone.replace(/\D/g, '');
             if (clean.length < 7) { showError(); return; }
 
-            document.getElementById('noteDisplay').textContent = note || '尽快移车，谢谢配合 🙏';
+            document.getElementById('noteDisplay').textContent = note || '车主会尽快挪车，谢谢配合 🙏';
             document.getElementById('callBtn').href = `tel:${clean}`;
             document.getElementById('mainContent').classList.add('visible');
 
